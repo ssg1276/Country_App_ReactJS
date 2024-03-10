@@ -11,17 +11,26 @@ function Country() {
     population: '',
     currency: '',
     capital: '',
+    loading: false,
+    error: null,
   })
 
-  function changeHandler(event) {
+  const changeHandler = (event) => {
     setState({ ...state, InputValue: event.target.value, show: false })
   }
 
   const callAPI = () => {
+    setState({ ...state, loading: true, error: null })
+
     fetch(
       `https://restcountries.com/v3.1/name/${state.InputValue}?fullText=true`
     )
-      .then((res) => res.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`)
+        }
+        return response.json()
+      })
       .then((data) => {
         setState({
           ...state,
@@ -33,25 +42,30 @@ function Country() {
           population: data[0].population,
           currency: data[0].currencies[Object.keys(data[0].currencies)].name,
           capital: data[0].capital[0],
+          loading: false,
         })
+      })
+      .catch((error) => {
+        setState({ ...state, loading: false, error: 'Error fetching data' })
       })
   }
 
   return (
-    <div className="bg-gradient-to-r from-green-400 via-blue-500 to-indigo-500 w-[550px] h-auto p-8 rounded-md shadow-lg text-white transition-transform transform hover:scale-105">
-      <div className="flex items-center justify-center">
+    <div className="bg-gradient-to-r from-green-400 via-blue-500 to-indigo-500 w-full md:w-[550px] h-auto p-8 rounded-md shadow-lg text-white transition-transform transform hover:scale-105 mx-auto">
+      <div className="flex flex-col  items-center justify-center  md:w-[550px] md:flex-row md:justify-center md:items-center">
         <input
           type="text"
           value={state.InputValue}
           onChange={changeHandler}
-          className="p-4 m-2 outline rounded-md bg-white text-black focus:outline-none transition-colors duration-300"
+          className="p-4 m-2 outline rounded-md bg-white text-black focus:outline-none transition-colors duration-300 w-full md:w-auto"
           placeholder="Enter country name"
         />
         <button
           onClick={callAPI}
-          className="bg-yellow-400 text-black font-bold p-4 rounded-md ml-2 hover:bg-yellow-500 focus:outline-none transition-all duration-300 transform hover:scale-105"
+          disabled={state.loading}
+          className="bg-yellow-400 text-black font-bold p-4 rounded-md mt-2 md:mt-0 hover:bg-yellow-500 focus:outline-none transition-all duration-300 transform hover:scale-105"
         >
-          Search
+          {state.loading ? 'Loading...' : 'Search'}
         </button>
       </div>
       <div
@@ -86,6 +100,12 @@ function Country() {
         </p>
         <div></div>
       </div>
+      {state.error && (
+        <p className="text-black  font-black">
+          Error:{' '}
+          <span className="text-white  font-normal  p-1">{state.error}</span>
+        </p>
+      )}
     </div>
   )
 }
